@@ -1,1 +1,2 @@
 st-gsheets-connection >= 0.0.4
+plotly >= 5.22.0
