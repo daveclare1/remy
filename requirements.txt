@@ -1,2 +1,4 @@
-st-gsheets-connection >= 0.0.4
-plotly >= 5.22.0
+pandas>=2.2.2
+plotly>=5.22.0
+st_gsheets_connection>=0.0.4
+streamlit>=1.36.0
