@@ -1,3 +1,5 @@
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import numpy as np
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
@@ -21,7 +23,7 @@ df = conn.read(
 df = df.convert_dtypes()
 
 df['timestamp'] = df['date'] + " " + df['time']
-df.timestamp = pd.to_datetime(df.timestamp, dayfirst=True)
+df.timestamp = pd.to_datetime(df.timestamp, dayfirst=True).dt.tz_localize(ZoneInfo('Europe/London'))
 df.date = pd.to_datetime(df.date, dayfirst=True)
 df.time = pd.to_datetime(df.time, format="%H:%M:%S")
 
@@ -81,6 +83,9 @@ df['y_scatter'] = df['y_scatter'].mask(df.action.isin(['food','drink']), pd.Time
 # title
 st.title("Remy's 'schedule'")
 
+timenow = pd.Timestamp.now(ZoneInfo('Europe/London'))
+timenow_norm = datetime.combine(pd.to_datetime("1900-01-01").date(), timenow.time())
+
 # plot timelines
 
 fig1 = go.Figure()
@@ -100,17 +105,25 @@ fig1.update_xaxes(nticks=10, showgrid=True, tickformat='%H:%M' )
 fig1.update_yaxes(nticks=int(df.day_idx.max())+1, 
                   showgrid=True, 
                   tickformat='%a %d %b')
+fig1.add_vline(timenow_norm,
+               line_dash="dash",
+               line_color="grey",
+               )
 st.plotly_chart(fig1)
 
 # wee timings
 def add_timing_plot(fig:go.Figure, df:pd.DataFrame, since_col:str, title:str):
     timedelta_ms = ((df_wee0.timestamp - df_wee0[since_col]) / 1e6).astype('int64').astype(np.int32)
-    plot_time = pd.to_timedelta(timedelta_ms, unit='ms') + pd.Timestamp("1970/01/01")
+    plot_time = pd.to_timedelta(timedelta_ms, unit='ms') + pd.Timestamp("1900/01/01")
     fig2.add_box(
         x=plot_time,
         boxpoints='all',
         name=title,
     )
+
+time_last_wee = pd.Timestamp("1900/01/01") + (timenow - df.query("action=='wee'").timestamp.iloc[-1])
+time_last_food = pd.Timestamp("1900/01/01") + (timenow - df.query("action=='food'").timestamp.iloc[-1])
+time_last_drink = pd.Timestamp("1900/01/01") + (timenow - df.query("action=='drink'").timestamp.iloc[-1])
 
 fig2 = go.Figure()
 df_wee0 = df.query("(action=='wee') & (wee_num==0)")
@@ -119,6 +132,8 @@ df_wee = df.query("(action=='wee')")
 add_timing_plot(fig2, df_wee0, 'last_water', 'From drinking')
 add_timing_plot(fig2, df_wee0, 'last_food', 'From eating')
 add_timing_plot(fig2, df_wee, 'last_wee', 'From last wee')
+# fig2.add_vline(time_last_drink, line_dash="dash", line_color="grey")
+# fig2.add_scatter(x=[time_last_drink]*2, y=[0,-1], mode='lines')
 
 fig2.update_layout(title='Time before wee', showlegend=False)
 fig2.update_xaxes(nticks=10, showgrid=True, tickformat='%H:%M')
