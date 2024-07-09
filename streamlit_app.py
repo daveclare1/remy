@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import numpy as np
 import streamlit as st
@@ -7,12 +7,12 @@ import pandas as pd
 import plotly.graph_objects as go
 
 marker_styles = {
-    'drink': dict(symbol='line-ns', size=10, line_width=2, line_color='darkblue', opacity=0.7),
+    'drink': dict(symbol='line-ns', size=10, line_width=2, line_color='darkblue', opacity=0.5),
     'food': dict(symbol='line-ns', size=20, line_width=2, color='black'),
-    'poo (good)': dict(symbol='triangle-up', size=12, color='brown', opacity=0.7),
-    'poo (bad)': dict(symbol='triangle-up-open', size=12, color='brown', opacity=0.7),
-    'wee (good)': dict(symbol='circle', size=12, color='lightskyblue', opacity=0.7),
-    'wee (bad)': dict(symbol='circle-open', size=12, color='lightskyblue', opacity=0.7),
+    'poo (good)': dict(symbol='triangle-up', size=12, color='brown', opacity=0.5),
+    'poo (bad)': dict(symbol='triangle-up-open', size=12, color='brown', opacity=0.5),
+    'wee (good)': dict(symbol='circle', size=12, color='lightskyblue', opacity=0.5),
+    'wee (bad)': dict(symbol='circle-open', size=12, color='lightskyblue', opacity=0.5),
 }
 
 conn = st.connection("gsheets", type=GSheetsConnection)
@@ -85,12 +85,17 @@ st.title("Remy's 'schedule'")
 
 timenow = pd.Timestamp.now(ZoneInfo('Europe/London'))
 timenow_norm = datetime.combine(pd.to_datetime("1900-01-01").date(), timenow.time())
+rolling_week_start = timenow.date() - timedelta(days=7)
 
 # plot timelines
 
 fig1 = go.Figure()
 
-for action, df_action in df.groupby('action_detail'):
+df_last_week = df.query(f'date > {rolling_week_start.strftime("%Y%m%d")}')
+df_timeline = df_last_week[df_last_week.action_detail.isin(marker_styles.keys())]
+
+
+for action, df_action in df_timeline.groupby('action_detail'):
     fig1.add_scatter(
         x=df_action.time,
         y=df_action.date + df_action.y_scatter,
