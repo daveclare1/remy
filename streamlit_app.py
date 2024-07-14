@@ -107,7 +107,7 @@ for action, df_action in df_timeline.groupby('action_detail'):
     )
 
 fig1.update_xaxes(nticks=10, showgrid=True, tickformat='%H:%M' )
-fig1.update_yaxes(nticks=int(df.day_idx.max())+1, 
+fig1.update_yaxes(nticks=8, 
                   showgrid=True, 
                   tickformat='%a %d %b')
 fig1.add_vline(timenow_norm,
